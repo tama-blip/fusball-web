@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Custom Tim — Fusball.id</title>
+  <link rel="icon" href="assets/images/logo-mark.svg">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body data-page="custom">
+  <div id="site-header"></div>
+  <main>
+    <section class="page-hero shell">
+      <span class="kicker">CUSTOM TIM</span><h1>Buat identitas timmu.</h1>
+      <p>Kirim brief timmu. Setelah dikirim, request akan masuk ke dashboard Fusball.id untuk konsultasi, desain, revisi, persetujuan, PO, dan produksi.</p>
+    </section>
+    <section class="section shell no-top">
+      <div class="custom-layout">
+        <form class="form-card" id="custom-form">
+          <div class="form-head"><span class="kicker">FORM REQUEST</span><h2>Brief Jersey Custom</h2><p>Untuk pemesanan custom tim, isi kebutuhan sejelas mungkin.</p></div>
+          <label>Nama tim<input name="teamName" required placeholder="Contoh: Ketintang FC"></label>
+          <label>Nama PIC<input name="contactName" required placeholder="Nama PIC"></label>
+          <label>WhatsApp<input name="whatsapp" required placeholder="08xxxxxxxxxx"></label>
+          <label>Jumlah jersey<input name="teamSize" required type="number" min="1" placeholder="Contoh: 14"></label>
+          <label>Brief desain<textarea name="brief" required placeholder="Warna, referensi, karakter, sponsor, kerah, lengan, dll."></textarea></label>
+          <label>Upload referensi visual<input name="reference" id="custom-file" type="file" accept="image/*"></label>
+          <div id="custom-preview" class="upload-preview hidden"></div>
+          <button class="btn btn-primary" type="submit">Kirim Request Custom ↗</button>
+          <p id="custom-message" class="form-message"></p>
+        </form>
+        <aside class="custom-side">
+          <div class="dark-card">
+            <span class="kicker">ALUR PENGERJAAN</span>
+            <ol class="process-list">
+              <li><span>01</span><div><strong>Konsultasi</strong><small>Brief, jumlah, arah desain</small></div></li>
+              <li><span>02</span><div><strong>Desain</strong><small>Konsep & revisi</small></div></li>
+              <li><span>03</span><div><strong>Persetujuan</strong><small>Konfirmasi desain final</small></div></li>
+              <li><span>04</span><div><strong>PO & produksi</strong><small>Produksi setelah disetujui</small></div></li>
+            </ol>
+          </div>
+        </aside>
+      </div>
+    </section>
+  </main>
+  <div id="site-footer"></div>
+  <script src="js/products.js"></script><script src="js/format.js"></script><script src="js/content.js"></script><script src="js/api.js"></script><script src="js/auth.js"></script><script src="js/app.js"></script>
+</body>
+</html>

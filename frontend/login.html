@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Masuk — Fusball.id</title>
+<link rel="icon" href="assets/images/logo-mark.svg"><link rel="stylesheet" href="css/style.css">
+</head>
+<body data-page="login">
+<div id="site-header"></div>
+<main class="auth-shell">
+<section class="auth-card">
+<span class="kicker">ACCOUNT</span>
+<h1>Selamat datang kembali.</h1>
+<p>Masuk untuk melanjutkan ke akun Fusball.id.</p>
+<form id="login-form">
+<label>Email<input name="email" type="email" autocomplete="email" required></label>
+<label>Password<input name="password" type="password" autocomplete="current-password" required></label>
+<button class="btn btn-primary" type="submit">Masuk ↗</button>
+<p id="login-message" class="form-message"></p>
+</form>
+<div class="auth-switch">Belum punya akun? <a href="register.html">Buat akun</a></div>
+</section>
+</main>
+<div id="site-footer"></div>
+<script src="js/products.js"></script><script src="js/format.js"></script><script src="js/content.js"></script><script src="js/api.js"></script><script src="js/auth.js"></script><script src="js/app.js"></script>
+<script>
+document.getElementById("login-form").addEventListener("submit", async (event) => {
+  event.preventDefault();
+  const form = event.currentTarget;
+  const data = Object.fromEntries(new FormData(form).entries());
+  const message = document.getElementById("login-message");
+  message.textContent = "Checking…";
+  try {
+    const result = await apiSend("/auth/login", "POST", data);
+    setAuth(result);
+    message.textContent = "Masuk berhasil.";
+    setTimeout(() => {
+      location.href = result.user.role === "admin" ? "/admin/index.html" : "/index.html";
+    }, 300);
+  } catch (error) {
+    message.textContent = error.message;
+  }
+});
+</script>
+</body>
+</html>

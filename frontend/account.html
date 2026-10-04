@@ -1,0 +1,132 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>My Account — Fusball.id</title>
+  <link rel="icon" href="assets/images/logo-mark.svg">
+  <link rel="stylesheet" href="css/style.css">
+  <style>
+    .account-head{display:flex;justify-content:space-between;gap:20px;align-items:end}.account-grid{display:grid;grid-template-columns:.7fr 1.3fr;gap:18px}.account-card{background:var(--surface);border:1px solid #252b2e;border-radius:22px;padding:24px}.order-card{background:linear-gradient(150deg,#14191a,#101314);border:1px solid #252b2e;border-radius:20px;padding:20px;margin-bottom:12px;box-shadow:0 18px 50px rgba(0,0,0,.12)}.order-top{display:flex;justify-content:space-between;gap:18px}.order-status{font-size:9px;font-weight:900;letter-spacing:.08em;color:var(--accent);background:#1a2415;border:1px solid #35492a;padding:6px 8px;border-radius:999px}.order-items{display:grid;gap:8px;margin-top:15px;padding-top:15px;border-top:1px solid #272d30}.order-item{display:grid;grid-template-columns:54px 1fr auto;gap:10px;align-items:center}.order-item img{width:54px;height:54px;border-radius:9px;object-fit:cover;background:#15191a}.order-meta{color:#8e969b;font-size:10px;margin-top:2px}.account-card h2{font-size:23px;letter-spacing:-.04em}.user-line{margin-top:12px;color:#aeb4b8;font-size:12px}.empty-state{color:#8f979b;font-size:13px;padding:24px 0}@media(max-width:850px){.account-grid{grid-template-columns:1fr}.account-head{display:block}}
+  
+.order-progress{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-top:18px}.progress-step{text-align:center;position:relative}.progress-step .p-dot{width:14px;height:14px;border-radius:50%;background:#30373a;border:2px solid #505a5f;margin:0 auto 7px;position:relative;z-index:2}.progress-step.active .p-dot,.progress-step.done .p-dot{background:var(--accent);border-color:var(--accent)}.progress-step:not(:last-child)::after{content:"";position:absolute;top:6px;left:calc(50% + 8px);right:calc(-50% + 8px);height:2px;background:#30373a}.progress-step.done:not(:last-child)::after,.progress-step.active:not(:last-child)::after{background:var(--accent)}.progress-step span{display:block;font-size:9px;color:#7e878c}.progress-step.active span,.progress-step.done span{color:#fff;font-weight:800}.order-note{margin-top:13px;padding:10px 12px;border-radius:10px;background:#151a17;border:1px solid #273329;color:#9eaaa5;font-size:10px}
+@media(max-width:650px){.order-progress{grid-template-columns:1fr}.progress-step{text-align:left;display:grid;grid-template-columns:22px 1fr;gap:8px}.progress-step .p-dot{margin:2px 0 0}.progress-step:not(:last-child)::after{left:6px;top:16px;bottom:-8px;width:2px;height:auto;right:auto}}
+
+</style>
+</head>
+<body data-page="account">
+<div id="site-header"></div>
+<main class="shell">
+  <section class="page-hero compact account-head">
+    <div><span class="kicker">ACCOUNT</span><h1>My orders.</h1><p>Riwayat pre-order dan status pesananmu.</p></div>
+    <button id="logout-btn" class="btn btn-ghost">Keluar</button>
+  </section>
+  <section class="section no-top">
+    <div class="account-grid">
+      <aside class="account-card" id="account-profile"><div id="account-actions" style="margin-top:18px;display:flex;gap:8px;flex-wrap:wrap"><a class="btn btn-primary" href="shop.html">Lihat Jersey</a><a class="btn btn-ghost" href="custom.html">Custom Tim</a></div></aside>
+      <div>
+        <div id="orders-list"></div>
+        <div id="custom-requests" style="margin-top:18px"></div>
+      </div>
+    </div>
+  </section>
+</main>
+<div id="site-footer"></div>
+<script src="js/products.js"></script><script src="js/format.js"></script><script src="js/content.js"></script><script src="js/api.js"></script><script src="js/auth.js"></script><script src="js/app.js"></script>
+<script>
+(async()=>{
+  const auth=getAuth();
+  if(!auth?.token){ location.replace("login.html"); return; }
+
+  document.getElementById("logout-btn").addEventListener("click", logout);
+
+  const profile=document.getElementById("account-profile");
+  profile.innerHTML=`
+    <span class="kicker">PROFILE</span>
+    <h2>${escapeHtml(auth.user.name)}</h2>
+    <div class="user-line">${escapeHtml(auth.user.email)}</div>
+    <div class="user-line">Role: ${escapeHtml(auth.user.role)}</div>
+    <div id="account-actions" style="margin-top:18px;display:flex;gap:8px;flex-wrap:wrap">
+      <a class="btn btn-primary" href="shop.html">Lihat Jersey</a>
+      <a class="btn btn-ghost" href="custom.html">Custom Tim</a>
+    </div>`;
+
+  const list=document.getElementById("orders-list");
+  try{
+    const orders=await apiAuth("/orders/mine");
+    if(!orders.length){
+      list.innerHTML=`<div class="account-card"><span class="kicker">ORDERS</span><div class="empty-state">Belum ada order. Mulai dari fantasy collection.</div><a class="btn btn-primary" href="shop.html">Lihat Jersey</a></div>`;
+    }else{
+      list.innerHTML=orders.map(order=>{
+        const sequence=["pending","paid","processing","shipped","completed"];
+        const current=sequence.indexOf(order.status);
+        const statusLabels={pending:"Pending",paid:"Paid",processing:"Processing",shipped:"Shipped",completed:"Completed",cancelled:"Cancelled"};
+        const safeCurrent=current < 0 ? 0 : current;
+        const tracking = order.status==="cancelled"
+          ? `<div class="order-note">Order dibatalkan. Silakan hubungi Fusball.id untuk informasi lebih lanjut.</div>`
+          : `<div class="order-progress">${sequence.map((st,i)=>`
+              <div class="progress-step ${i<safeCurrent?"done":""} ${i===safeCurrent?"active":""}">
+                <div class="p-dot"></div><span>${statusLabels[st]}</span>
+              </div>`).join("")}</div>`;
+        return `
+        <article class="order-card">
+          <div class="order-top">
+            <div><div class="order-id-line"><strong>${makeOrderNumber(order.id, order.created_at)}</strong></div><div class="order-date-line">Dipesan ${formatDateTime(order.created_at)}</div><div class="order-date-line">Terakhir diperbarui ${formatDateTime(order.updated_at)}</div></div>
+            <span class="order-status">${escapeHtml(statusLabels[order.status]||String(order.status||"").toUpperCase())}</span>
+          </div>
+          <div class="order-items">
+            ${order.items.map(item=>`
+              <div class="order-item">
+                <img src="${escapeHtml(item.image_url || "assets/images/hero-placeholder.png")}" alt="${escapeHtml(item.name)}" loading="lazy">
+                <div><strong>${escapeHtml(item.name)}</strong><div class="order-meta">Size ${escapeHtml(item.size_code)} · ${item.quantity} pcs</div></div>
+                <strong>${rupiah(Number(item.unit_price)*item.quantity)}</strong>
+              </div>`).join("")}
+          </div>
+          ${tracking}
+          ${order.history?.length ? `<div class="order-note">Status terakhir: ${escapeHtml(String(order.history[order.history.length-1].status).toUpperCase())} · ${formatDateTime(order.history[order.history.length-1].created_at)}</div>` : ""}
+          <div class="summary-line summary-total"><span>Total</span><span>${rupiah(Number(order.total))}</span></div>
+        </article>`;
+      }).join("");
+    }
+  }catch(err){
+    list.innerHTML=`<div class="account-card"><p class="form-message">${escapeHtml(err.message)}</p></div>`;
+  }
+
+  const customRoot=document.getElementById("custom-requests");
+  if(customRoot){
+    try{
+      const requests=await apiAuth("/custom-requests/mine");
+      const sequence=["consultation","designing","revision","approved","po","production","completed"];
+      const labels={consultation:"Consultation",designing:"Desaining",revision:"Revision",approved:"Approved",po:"PO",production:"Production",completed:"Completed"};
+      customRoot.innerHTML=`
+        <div class="account-card">
+          <span class="kicker">CUSTOM TIM</span>
+          <h2 style="font-size:23px;letter-spacing:-.04em">My custom requests.</h2>
+          <div style="margin-top:14px">
+            ${requests.length ? requests.map(req=>{
+              const current=Math.max(0, sequence.indexOf(req.status));
+              return `<article class="custom-request-card">
+                <div class="request-head">
+                  <div><strong>#CR-${String(req.id).padStart(4,"0")} · ${escapeHtml(req.team_name)}</strong>
+                    <div class="request-meta">${req.team_size} jersey · ${formatDateOnly(req.created_at)}</div>
+                  </div>
+                  <span class="request-status">${escapeHtml(labels[req.status]||String(req.status||"").toUpperCase())}</span>
+                </div>
+                <div class="request-brief">${escapeHtml(req.brief)}</div>
+                <div class="request-progress">
+                  ${sequence.map((st,i)=>`<div class="req-step ${i<current?"done":""} ${i===current?"active":""}">
+                    <div class="req-dot"></div><span>${labels[st]}</span>
+                  </div>`).join("")}
+                </div>
+                ${req.reference_url ? `<div class="request-meta" style="margin-top:12px"><a href="${escapeHtml(req.reference_url)}" target="_blank" rel="noreferrer">Lihat referensi yang diunggah ↗</a></div>` : ""}
+              </article>`;
+            }).join("") : `<div class="empty-state">Belum ada custom request.</div>`}
+          </div>
+        </div>`;
+    }catch(err){
+      customRoot.innerHTML=`<div class="account-card"><p class="form-message">${escapeHtml(err.message)}</p></div>`;
+    }
+  }
+})();
+</script>
+</body>
+</html>

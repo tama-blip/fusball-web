@@ -1,0 +1,19 @@
+{
+  "name": "fusball-id",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Fusball.id final Indonesian editorial football jersey marketplace with full admin CMS, product/category management, two-view galleries, custom requests and customer accounts",
+  "scripts": {
+    "start": "node backend/server.js",
+    "dev": "node backend/server.js"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2",
+    "mysql2": "^3.12.0",
+    "bcryptjs": "^2.4.3",
+    "jsonwebtoken": "^9.0.2",
+    "multer": "^2.4.0"
+  }
+}

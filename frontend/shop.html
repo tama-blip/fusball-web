@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Koleksi — Fusball.id</title>
+  <link rel="icon" href="assets/images/logo-mark.svg">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body data-page="shop">
+  <div id="site-header"></div>
+  <main>
+    <section class="page-hero shell">
+      <div><span class="kicker">KOLEKSI</span><h1>Jersey yang punya cerita.</h1><p>Telusuri fantasy jersey Fusball.id berdasarkan nama, kategori, status PO, dan harga.</p></div>
+      <div class="filter-bar">
+        <input id="shop-search" class="control" placeholder="Cari jersey..." aria-label="Cari produk">
+        <select id="shop-category" class="control"><option value="all">Semua kategori</option></select>
+        <select id="shop-status" class="control"><option value="all">Semua status</option><option value="po_open">PO dibuka</option><option value="coming_soon">Segera hadir</option><option value="po_closed">PO ditutup</option></select>
+        <select id="shop-sort" class="control"><option value="newest">Terbaru</option><option value="price-low">Harga terendah</option><option value="price-high">Harga tertinggi</option><option value="name">Nama A–Z</option></select>
+      </div>
+    </section>
+    <section class="section shell no-top">
+      <div id="shop-grid" class="product-grid product-grid-3"></div>
+    </section>
+  </main>
+  <div id="site-footer"></div>
+  <script src="js/products.js"></script><script src="js/format.js"></script><script src="js/content.js"></script><script src="js/api.js"></script><script src="js/auth.js"></script><script src="js/app.js"></script>
+</body>
+</html>

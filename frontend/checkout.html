@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Checkout — Fusball.id</title><link rel="icon" href="assets/images/logo-mark.svg"><link rel="stylesheet" href="css/style.css">
+</head>
+<body data-page="checkout">
+<div id="site-header"></div>
+<main class="shell">
+<section class="page-hero compact"><span class="kicker">CHECKOUT</span><h1>Selesaikan pesananmu.</h1></section>
+<section class="checkout-layout section no-top">
+<form class="form-card" id="checkout-form">
+<div class="form-head"><span class="kicker">CUSTOMER</span><h2>Data pengiriman</h2></div>
+<label>Nama lengkap<input name="name" required></label>
+<label>WhatsApp<input name="phone" required></label>
+<label>Email<input name="email" type="email" required></label>
+<label>Alamat pengiriman<textarea name="address" required></textarea></label>
+<label>Metode pembayaran<select name="payment" required><option value="transfer">Transfer bank (demo)</option><option value="qris">QRIS (demo)</option></select></label>
+<button class="btn btn-primary" type="submit">Place Pre-order ↗</button>
+<p id="checkout-message" class="form-message"></p>
+</form>
+<aside class="summary-card" id="checkout-summary"></aside>
+</section>
+</main>
+<div id="site-footer"></div>
+<script src="js/products.js"></script><script src="js/format.js"></script><script src="js/content.js"></script><script src="js/api.js"></script><script src="js/auth.js"></script><script src="js/app.js"></script>
+</body></html>
