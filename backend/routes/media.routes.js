@@ -75,22 +75,22 @@ async function deleteCloudinaryImage(imageUrl) {
 // Get current homepage hero image
 router.get("/site/hero", async (_req, res, next) => {
   try {
-    const files = fs
-      .readdirSync(SITE_DIR)
-      .filter(name => /\.(jpe?g|png|webp)$/i.test(name))
-      .sort()
-      .reverse();
+    const [rows] = await pool.query(
+      `
+        SELECT setting_value
+        FROM site_settings
+        WHERE setting_key = 'hero_image_url'
+        LIMIT 1
+      `
+    );
 
-    if (!files.length) {
-      return res.json({
-        exists: false,
-        image_url: null
-      });
-    }
+    const imageUrl = rows.length
+      ? rows[0].setting_value
+      : null;
 
     res.json({
-      exists: true,
-      image_url: `/uploads/site/${files[0]}`
+      exists: Boolean(imageUrl),
+      image_url: imageUrl || null
     });
 
   } catch (error) {
@@ -105,34 +105,119 @@ router.post(
   authenticate,
   requireRole("admin"),
   siteUpload.single("image"),
+
   async (req, res, next) => {
+
+    let uploadedCloudinary = null;
+
     try {
+
+      // --------------------------------------------------------
+      // Check uploaded file
+      // --------------------------------------------------------
+
       if (!req.file) {
         return res.status(400).json({
           message: "Choose a JPG, PNG, or WEBP image."
         });
       }
 
-      // Remove old hero images
-      for (const name of fs.readdirSync(SITE_DIR)) {
-        if (
-          name !== req.file.filename &&
-          /\.(jpe?g|png|webp)$/i.test(name)
-        ) {
-          const oldPath = path.join(SITE_DIR, name);
 
-          if (fs.existsSync(oldPath)) {
-            fs.unlinkSync(oldPath);
-          }
+      // --------------------------------------------------------
+      // Get old hero image from database
+      // --------------------------------------------------------
+
+      const [oldRows] = await pool.query(
+        `
+          SELECT setting_value
+          FROM site_settings
+          WHERE setting_key = 'hero_image_url'
+          LIMIT 1
+        `
+      );
+
+      const oldImageUrl = oldRows.length
+        ? oldRows[0].setting_value
+        : null;
+
+
+      // --------------------------------------------------------
+      // Upload new image to Cloudinary
+      // --------------------------------------------------------
+
+      const result = await cloudinary.uploader.upload(
+        req.file.path,
+        {
+          folder: "fusball_id/site",
+          resource_type: "image"
         }
+      );
+
+
+      // Remember uploaded Cloudinary public ID
+      // in case database update fails later
+      uploadedCloudinary = result.public_id;
+
+
+      // Permanent Cloudinary URL
+      const newImageUrl = result.secure_url;
+
+
+      // --------------------------------------------------------
+      // Delete temporary local file
+      // --------------------------------------------------------
+
+      if (
+        req.file.path &&
+        fs.existsSync(req.file.path)
+      ) {
+        fs.unlinkSync(req.file.path);
       }
+
+
+      // --------------------------------------------------------
+      // Save Cloudinary URL to site_settings
+      // --------------------------------------------------------
+
+      await pool.query(
+        `
+          INSERT INTO site_settings
+            (setting_key, setting_value)
+          VALUES
+            ('hero_image_url', ?)
+          ON DUPLICATE KEY UPDATE
+            setting_value = VALUES(setting_value)
+        `,
+        [newImageUrl]
+      );
+
+
+      // --------------------------------------------------------
+      // Delete old Cloudinary image
+      // --------------------------------------------------------
+
+      if (
+        oldImageUrl &&
+        oldImageUrl.includes("res.cloudinary.com")
+      ) {
+        await deleteCloudinaryImage(oldImageUrl);
+      }
+
+
+      // --------------------------------------------------------
+      // Response
+      // --------------------------------------------------------
 
       res.status(201).json({
         message: "Homepage hero image updated.",
-        image_url: `/uploads/site/${req.file.filename}`
+        image_url: newImageUrl
       });
 
     } catch (error) {
+
+      // --------------------------------------------------------
+      // Delete temporary local file
+      // --------------------------------------------------------
 
       if (
         req.file?.path &&
@@ -140,6 +225,33 @@ router.post(
       ) {
         fs.unlinkSync(req.file.path);
       }
+
+
+      // --------------------------------------------------------
+      // Cleanup Cloudinary if database failed
+      // --------------------------------------------------------
+
+      if (uploadedCloudinary) {
+        try {
+
+          await cloudinary.uploader.destroy(
+            uploadedCloudinary,
+            {
+              resource_type: "image",
+              invalidate: true
+            }
+          );
+
+        } catch (cleanupError) {
+
+          console.error(
+            "Failed to cleanup Cloudinary hero image:",
+            cleanupError.message
+          );
+
+        }
+      }
+
 
       next(error);
     }
@@ -152,23 +264,56 @@ router.delete(
   "/site/hero",
   authenticate,
   requireRole("admin"),
+
   async (_req, res, next) => {
+
     try {
 
-      for (const name of fs.readdirSync(SITE_DIR)) {
+      // --------------------------------------------------------
+      // Get current hero image
+      // --------------------------------------------------------
 
-        if (/\.(jpe?g|png|webp)$/i.test(name)) {
+      const [rows] = await pool.query(
+        `
+          SELECT setting_value
+          FROM site_settings
+          WHERE setting_key = 'hero_image_url'
+          LIMIT 1
+        `
+      );
 
-          const filePath = path.join(
-            SITE_DIR,
-            name
-          );
+      const imageUrl = rows.length
+        ? rows[0].setting_value
+        : null;
 
-          if (fs.existsSync(filePath)) {
-            fs.unlinkSync(filePath);
-          }
-        }
+
+      // --------------------------------------------------------
+      // Delete image from Cloudinary
+      // --------------------------------------------------------
+
+      if (
+        imageUrl &&
+        imageUrl.includes("res.cloudinary.com")
+      ) {
+        await deleteCloudinaryImage(imageUrl);
       }
+
+
+      // --------------------------------------------------------
+      // Remove URL from database
+      // --------------------------------------------------------
+
+      await pool.query(
+        `
+          INSERT INTO site_settings
+            (setting_key, setting_value)
+          VALUES
+            ('hero_image_url', NULL)
+          ON DUPLICATE KEY UPDATE
+            setting_value = NULL
+        `
+      );
+
 
       res.json({
         message: "Homepage hero image removed."
