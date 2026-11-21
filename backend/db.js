@@ -7,9 +7,11 @@ const pool = mysql.createPool({
   user: process.env.DB_USER || "root",
   password: process.env.DB_PASSWORD || "",
   database: process.env.DB_NAME || "fusball_id",
+
   waitForConnections: true,
-  connectionLimit: 10,
-  queueLimit: 0,
+  connectionLimit: 2,
+  queueLimit: 20,
+
   charset: "utf8mb4"
 });
 
