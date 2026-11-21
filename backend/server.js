@@ -1095,26 +1095,30 @@ app.use((err,_req,res,_next) => {
 
 
 
-(async () => {
 
-  try {
+const server = app.listen(PORT, () => {
+  console.log(`[Fusball.id] Server listening on http://localhost:${PORT}`);
+  console.log(`[Fusball.id] Health check: http://localhost:${PORT}/api/health`);
+});
 
-    await ensureCmsTables();
+const shutdown = (signal) => {
+  console.log(`[Fusball.id] ${signal} received. Closing server...`);
 
-    app.listen(PORT, () => {
+  server.close(async (error) => {
+    if (error) {
+      console.error("[Fusball.id] Server shutdown error:", error);
+    }
 
-      console.log(`[Fusball.id] Server listening on http://localhost:${PORT}`);
+    try {
+      await pool.end();
+      console.log("[Fusball.id] Database pool closed.");
+      process.exit(0);
+    } catch (err) {
+      console.error("[Fusball.id] Database shutdown error:", err.message);
+      process.exit(1);
+    }
+  });
+};
 
-      console.log(`[Fusball.id] Health check: http://localhost:${PORT}/api/health`);
-
-    });
-
-  } catch (error) {
-
-    console.error("[Fusball.id] Startup failed:", error.message);
-
-    process.exit(1);
-
-  }
-
-})();
+process.once("SIGTERM", () => shutdown("SIGTERM"));
+process.once("SIGINT", () => shutdown("SIGINT"));
