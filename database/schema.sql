@@ -211,12 +211,93 @@ CROSS JOIN (
 
 -- Editorial CMS: external blog links and web design team
 CREATE TABLE IF NOT EXISTS blog_posts (
-  id INT AUTO_INCREMENT PRIMARY KEY, title VARCHAR(180) NOT NULL, excerpt TEXT NULL, url VARCHAR(1000) NOT NULL,
-  image_url VARCHAR(1000) NULL, published TINYINT(1) NOT NULL DEFAULT 1, sort_order INT NOT NULL DEFAULT 0,
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  title VARCHAR(180) NOT NULL,
+  excerpt TEXT NULL,
+  url VARCHAR(1000) NULL,
+  image_url VARCHAR(1000) NULL,
+  published TINYINT(1) NOT NULL DEFAULT 1,
+  sort_order INT NOT NULL DEFAULT 0,
+  slug VARCHAR(220) NULL,
+  content LONGTEXT NULL,
+  category VARCHAR(100) NULL,
+  tags VARCHAR(500) NULL,
+  focus_keyword VARCHAR(160) NULL,
+  secondary_keywords VARCHAR(500) NULL,
+  seo_title VARCHAR(180) NULL,
+  meta_description VARCHAR(320) NULL,
+  cta_label VARCHAR(180) NULL,
+  cta_url VARCHAR(1000) NULL,
+  status ENUM('draft','scheduled','published') NOT NULL DEFAULT 'published',
+  scheduled_at DATETIME NULL,
+  published_at DATETIME NULL,
+  author_name VARCHAR(120) NOT NULL DEFAULT 'Fusball.id Editorial',
+  UNIQUE KEY uq_blog_posts_slug (slug),
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 );
 CREATE TABLE IF NOT EXISTS web_team (
   id INT AUTO_INCREMENT PRIMARY KEY, name VARCHAR(120) NOT NULL, role VARCHAR(160) NOT NULL, bio TEXT NULL,
   photo_url VARCHAR(1000) NULL, instagram_url VARCHAR(1000) NULL, sort_order INT NOT NULL DEFAULT 0, active TINYINT(1) NOT NULL DEFAULT 1,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 );
+
+
+-- Blog Marketing Analytics: visitor keys are hashed server-side; no IP address is stored.
+CREATE TABLE IF NOT EXISTS site_analytics_events (
+  id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  event_type VARCHAR(30) NOT NULL DEFAULT 'page_view',
+  path VARCHAR(500) NOT NULL,
+  article_id INT NULL,
+  visitor_hash CHAR(64) NOT NULL,
+  traffic_source VARCHAR(100) NOT NULL DEFAULT 'direct',
+  utm_source VARCHAR(160) NULL,
+  utm_medium VARCHAR(160) NULL,
+  utm_campaign VARCHAR(160) NULL,
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  KEY idx_analytics_created (created_at),
+  KEY idx_analytics_article_created (article_id, created_at),
+  KEY idx_analytics_source_created (traffic_source, created_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS marketing_campaigns (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  name VARCHAR(180) NOT NULL,
+  objective VARCHAR(500) NULL,
+  start_date DATE NOT NULL,
+  end_date DATE NOT NULL,
+  status ENUM('planned','active','completed') NOT NULL DEFAULT 'planned',
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  KEY idx_campaign_dates (start_date, end_date)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS campaign_promotions (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  campaign_id INT NOT NULL,
+  article_id INT NULL,
+  platform VARCHAR(40) NOT NULL,
+  content_format VARCHAR(60) NOT NULL,
+  status ENUM('planned','published') NOT NULL DEFAULT 'planned',
+  scheduled_at DATETIME NULL,
+  published_at DATETIME NULL,
+  post_url VARCHAR(1000) NULL,
+  reach BIGINT UNSIGNED NOT NULL DEFAULT 0,
+  impressions BIGINT UNSIGNED NOT NULL DEFAULT 0,
+  likes BIGINT UNSIGNED NOT NULL DEFAULT 0,
+  comments BIGINT UNSIGNED NOT NULL DEFAULT 0,
+  shares BIGINT UNSIGNED NOT NULL DEFAULT 0,
+  saves BIGINT UNSIGNED NOT NULL DEFAULT 0,
+  profile_visits BIGINT UNSIGNED NOT NULL DEFAULT 0,
+  link_clicks BIGINT UNSIGNED NOT NULL DEFAULT 0,
+  caption TEXT NULL,
+  hashtags VARCHAR(500) NULL,
+  cta VARCHAR(300) NULL,
+  notes TEXT NULL,
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  KEY idx_promo_campaign (campaign_id),
+  KEY idx_promo_article (article_id),
+  CONSTRAINT fk_promo_campaign FOREIGN KEY (campaign_id) REFERENCES marketing_campaigns(id) ON DELETE CASCADE,
+  CONSTRAINT fk_promo_article FOREIGN KEY (article_id) REFERENCES blog_posts(id) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

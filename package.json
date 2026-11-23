@@ -5,7 +5,11 @@
   "description": "Fusball.id final Indonesian editorial football jersey marketplace with full admin CMS, product/category management, two-view galleries, custom requests and customer accounts",
   "scripts": {
     "start": "node backend/server.js",
-    "dev": "node backend/server.js"
+    "dev": "node backend/server.js",
+    "migrate:marketing": "node backend/migrate-marketing.js",
+    "migrate:marketing:cloud": "node backend/migrate-marketing.js --cloud",
+    "backup:database": "node backend/backup-database.js",
+    "backup:cloud": "node backend/backup-database.js --cloud"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",

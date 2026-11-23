@@ -111,6 +111,7 @@ function renderHeader() {
         <nav class="main-nav" aria-label="Navigasi utama">
           <a class="${page === "home" ? "active" : ""}" href="index.html">Beranda</a>
           <a class="${page === "shop" ? "active" : ""}" href="shop.html">Koleksi</a>
+          <a class="${["blog", "blog-article"].includes(page) ? "active" : ""}" href="blog.html">Journal</a>
           <a class="${page === "about" ? "active" : ""}" href="about.html">Tentang</a>
           <a class="${page === "custom" ? "active" : ""}" href="custom.html">Custom</a>
           <a class="${page === "contact" ? "active" : ""}" href="contact.html">Kontak</a>
@@ -129,7 +130,28 @@ function renderHeader() {
 function renderFooter() {
   const target=document.querySelector("#site-footer"); if(!target)return;
   const s=window.FUSBALL_SITE_SETTINGS||{}; const wa=String(s.whatsapp||"").replace(/\D/g,"");
-  target.innerHTML=`<footer class="site-footer"><div class="footer-inner"><div><strong>FUSBALL.ID</strong><p>Football culture, fantasy jersey, dan identitas tim.</p></div><div class="footer-links"><a href="about.html">Tentang Kami</a><a href="shop.html">Koleksi</a><a href="blog.html">Journal</a><a href="custom.html">Custom Tim</a><a href="contact.html">Kontak</a>${wa?`<a href="https://wa.me/${wa}" target="_blank" rel="noopener">WhatsApp</a>`:""}</div><div class="footer-bottom">© 2026 Fusball.id · Dibuat untuk mereka yang hidup di dalam football culture.</div></div></footer>`;
+  target.innerHTML=`<footer class="site-footer"><div class="footer-inner"><div><strong>FUSBALL.ID</strong><p>Football culture, fantasy jersey, dan identitas tim.</p></div><div class="footer-links"><a href="about.html">Tentang Kami</a><a href="shop.html">Koleksi</a><a href="blog.html">Journal</a><a href="custom.html">Custom Tim</a><a href="contact.html">Kontak</a><a href="#" id="analytics-preferences">Preferensi privasi</a>${wa?`<a href="https://wa.me/${wa}" target="_blank" rel="noopener">WhatsApp</a>`:""}</div><div class="footer-bottom">© 2026 Fusball.id · Dibuat untuk mereka yang hidup di dalam football culture.</div></div></footer><aside class="analytics-consent" id="analytics-consent" hidden role="region" aria-label="Pilihan analitik website"><div><b>Statistik kunjungan</b><p>Fusball.id menggunakan ID acak di browser untuk menghitung page views dan perkiraan pengunjung. IP address dan user-agent tidak disimpan. Kamu bisa menolak tanpa memengaruhi fungsi website.</p></div><div class="analytics-consent-actions"><button type="button" class="btn btn-ghost" id="analytics-decline">Tolak</button><button type="button" class="btn btn-primary" id="analytics-accept">Izinkan</button></div></aside>`;
+}
+
+function initAnalyticsConsent() {
+  const panel=document.getElementById("analytics-consent");
+  if(!panel)return;
+  let choice="";
+  try{choice=localStorage.getItem("fusballAnalyticsConsent")||"";}catch{}
+  panel.hidden=Boolean(choice);
+  document.getElementById("analytics-preferences")?.addEventListener("click",event=>{
+    event.preventDefault();
+    panel.hidden=false;
+  });
+  document.getElementById("analytics-accept")?.addEventListener("click",()=>{
+    try{localStorage.setItem("fusballAnalyticsConsent","accepted");}catch{}
+    panel.hidden=true;
+    trackWebsitePageView();
+  });
+  document.getElementById("analytics-decline")?.addEventListener("click",()=>{
+    try{localStorage.setItem("fusballAnalyticsConsent","declined");}catch{}
+    panel.hidden=true;
+  });
 }
 
 function renderChatHint(){
@@ -554,6 +576,27 @@ function initScrollMotion() {
   items.forEach(item => observer.observe(item));
 }
 
+
+function trackWebsitePageView() {
+  if (document.body?.dataset?.page === "admin") return;
+  try {
+    if (localStorage.getItem("fusballAnalyticsConsent") !== "accepted") return;
+    let visitorId = localStorage.getItem("fusballVisitorId");
+    if (!visitorId) {
+      visitorId = (window.crypto && crypto.randomUUID) ? crypto.randomUUID() : `fv-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+      localStorage.setItem("fusballVisitorId", visitorId);
+    }
+    const params = new URLSearchParams(location.search);
+    const articleId = Number(document.querySelector('meta[name="article-id"]')?.content) || null;
+    fetch(`${API_BASE}/marketing/track`, {
+      method: "POST", headers: { "Content-Type": "application/json" }, keepalive: true,
+      body: JSON.stringify({ visitor_id: visitorId, path: location.pathname, article_id: articleId,
+        referrer: document.referrer || "", utm_source: params.get("utm_source") || "",
+        utm_medium: params.get("utm_medium") || "", utm_campaign: params.get("utm_campaign") || "" })
+    }).catch(() => {});
+  } catch (error) { console.warn("Analytics tracking unavailable:", error.message); }
+}
+
 async function bootApp() {
   try { window.FUSBALL_SITE_SETTINGS = await apiGet("/site-settings"); } catch { window.FUSBALL_SITE_SETTINGS = {}; }
   renderHeader();
@@ -565,6 +608,7 @@ async function bootApp() {
   // page uses the same database-backed product source.
   renderHeader();
   renderFooter();
+  initAnalyticsConsent();
 
   switch (document.body.dataset.page) {
     case "home":
@@ -590,6 +634,7 @@ async function bootApp() {
   }
 
   initScrollMotion();
+  trackWebsitePageView();
 }
 
 if (document.readyState === "loading") {

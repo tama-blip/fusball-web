@@ -21,6 +21,7 @@ const orderRoutes = require("./routes/order.routes");
 const customRoutes = require("./routes/custom.routes");
 
 const mediaRoutes = require("./routes/media.routes");
+const marketingRoutes = require("./routes/marketing.routes");
 
 
 
@@ -119,6 +120,7 @@ app.use("/api/orders", orderRoutes);
 app.use("/api/custom-requests", customRoutes);
 
 app.use("/api/media", mediaRoutes);
+app.use(marketingRoutes);
 
 
 
@@ -136,7 +138,7 @@ app.get("/api/site-settings", asyncRoute(async (_req,res) => {
 
 app.get("/api/blog", asyncRoute(async (_req,res) => {
 
-  const [rows] = await pool.query(`SELECT id,title,excerpt,url,image_url,published,sort_order,created_at,updated_at FROM blog_posts WHERE published=1 ORDER BY sort_order ASC, created_at DESC`);
+  const [rows] = await pool.query(`SELECT id,title,excerpt,url,image_url,published,sort_order,created_at,updated_at FROM blog_posts WHERE published=1 AND (content IS NULL OR content = '') ORDER BY sort_order ASC, created_at DESC`);
 
   res.json(rows);
 
@@ -221,7 +223,7 @@ const deleteCloudinaryUpload = async (value) => {
 
 app.get("/api/admin/blog", authenticate, requireRole("admin"), asyncRoute(async (_req,res) => {
 
-  const [rows] = await pool.query(`SELECT * FROM blog_posts ORDER BY sort_order ASC, created_at DESC`);
+  const [rows] = await pool.query(`SELECT * FROM blog_posts WHERE content IS NULL OR content = '' ORDER BY sort_order ASC, created_at DESC`);
 
   res.json(rows);
 
@@ -293,7 +295,7 @@ app.put("/api/admin/blog/:id", authenticate, requireRole("admin"), blogUpload.si
   }
 
   const [existingRows] = await pool.query(
-    "SELECT image_url FROM blog_posts WHERE id=? LIMIT 1",
+    "SELECT image_url FROM blog_posts WHERE id=? AND (content IS NULL OR content = '') LIMIT 1",
     [id]
   );
 
@@ -358,7 +360,7 @@ app.delete("/api/admin/blog/:id", authenticate, requireRole("admin"), asyncRoute
   }
 
   const [rows] = await pool.query(
-    "SELECT image_url FROM blog_posts WHERE id=? LIMIT 1",
+    "SELECT image_url FROM blog_posts WHERE id=? AND (content IS NULL OR content = '') LIMIT 1",
     [id]
   );
 

@@ -8,3 +8,5 @@ uploads/*
 !uploads/.gitkeep
 
 *.sql
+!database/*.sql
+!database/migrations/*.sql
