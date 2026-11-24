@@ -159,7 +159,7 @@
       };
       Object.entries(values).forEach(([key, value]) => fd.append(key, value));
       if (file) fd.append("thumbnail", file);
-      await multipart(`/admin/articles${article.id ? `/${article.id}` : ""}`, article.id ? "PUT" : "POST", fd);
+      await multipart(`/marketing/admin/articles${article.id ? `/${article.id}` : ""}`,article.id ? "PUT" : "POST",fd);
       toast(article.id ? "Artikel diperbarui." : "Artikel berhasil dibuat.");
       closeModal(); await loadArticles();
     } catch (error) { toast(error.message); }
