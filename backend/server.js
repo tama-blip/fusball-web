@@ -29,7 +29,14 @@ const app = express();
 
 const PORT = process.env.PORT || 3000;
 
-
+// Hide implementation details and set basic browser security headers.
+app.disable("x-powered-by");
+app.use((_req, res, next) => {
+  res.setHeader("X-Content-Type-Options", "nosniff");
+  res.setHeader("Referrer-Policy", "strict-origin-when-cross-origin");
+  res.setHeader("X-Frame-Options", "SAMEORIGIN");
+  next();
+});
 
 app.use(cors());
 
@@ -1075,24 +1082,57 @@ app.get("/api/admin/custom-requests", authenticate, requireRole("admin"), asyncR
 
 
 
-app.use((err,_req,res,_next) => {
+// Keep unknown API URLs machine-readable; return a branded page for browser URLs.
+app.use((req, res, next) => {
+  if (req.path.startsWith("/api/")) {
+    return res.status(404).json({ message: "Endpoint API tidak ditemukan." });
+  }
 
+  return res.status(404).sendFile(
+    path.join(__dirname, "..", "frontend", "404.html"),
+    (error) => {
+      if (error && !res.headersSent) {
+        res.status(404).type("text/plain").send("Halaman tidak ditemukan.");
+      }
+    }
+  );
+});
+
+app.use((err, req, res, _next) => {
   console.error(err);
 
-  if (err && err.code === "LIMIT_FILE_SIZE") return res.status(400).json({message:"Ukuran gambar terlalu besar. Maksimal 5 MB untuk thumbnail blog dan foto tim."});
+  if (err?.type === "entity.parse.failed") {
+    return res.status(400).json({ message: "Format JSON tidak valid." });
+  }
 
-  if (err && err.code === "LIMIT_UNEXPECTED_FILE") return res.status(400).json({message:"Field upload tidak dikenali."});
+  if (err?.type === "entity.too.large") {
+    return res.status(413).json({ message: "Ukuran request terlalu besar." });
+  }
 
-  if (err && err.message === "Only JPG, PNG, and WEBP images are supported.") return res.status(400).json({message:err.message});
+  if (err?.code === "LIMIT_FILE_SIZE") {
+    const maxSize = req.path.startsWith("/api/media/products/")
+      ? "8 MB"
+      : req.path.startsWith("/api/media/site/")
+        ? "12 MB"
+        : req.path.startsWith("/api/custom-requests")
+          ? "10 MB"
+          : "5 MB";
+    return res.status(413).json({ message: `Ukuran file terlalu besar. Batas upload untuk fitur ini ${maxSize}.` });
+  }
 
-  res.status(500).json({
+  if (err?.code === "LIMIT_UNEXPECTED_FILE") {
+    return res.status(400).json({ message: "Field upload tidak dikenali." });
+  }
 
-    message:"Internal server error.",
+  if (err?.message === "Only JPG, PNG, and WEBP images are supported.") {
+    return res.status(400).json({ message: err.message });
+  }
 
+  const status = Number.isInteger(err?.status) && err.status >= 400 && err.status < 500 ? err.status : 500;
+  res.status(status).json({
+    message: status === 500 ? "Internal server error." : (err.message || "Request tidak valid."),
     detail: process.env.NODE_ENV === "development" ? err.message : undefined
-
   });
-
 });
 
 

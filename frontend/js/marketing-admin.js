@@ -94,7 +94,7 @@
         <div class="admin-field-v10"><label>KATEGORI</label><input id="ma-category" maxlength="100" value="${esc(article.category || "Football Culture")}" placeholder="Football Culture"></div>
         <div class="admin-field-v10 full"><label>RINGKASAN / EXCERPT</label><textarea id="ma-excerpt" maxlength="2000" rows="3" placeholder="Ringkasan untuk kartu artikel dan hasil pencarian">${esc(article.excerpt || "")}</textarea></div>
         <div class="admin-field-v10 full"><label>ISI ARTIKEL (MARKDOWN) *</label><div class="markdown-toolbar">${toolbarButton("H2", "## ")}${toolbarButton("H3", "### ")}${toolbarButton("Tebal", "**", "**")}${toolbarButton("Kutipan", "> ")}${toolbarButton("Daftar", "- ")}${toolbarButton("Tautan", "[", "](https://contoh.com)", "teks tautan")}${toolbarButton("Gambar", "![", "](https://contoh.com/gambar.jpg)", "deskripsi gambar")}</div><textarea id="ma-content" rows="18" maxlength="100000" placeholder="# Judul bagian\n\nTulis isi artikel 500–800 kata...">${esc(article.content || "")}</textarea><small class="marketing-help"><span id="ma-word-count">0 kata</span> · 100.000 karakter maksimal. Markdown dirender dengan aman pada halaman publik.</small></div>
-        <div class="admin-field-v10 full"><label>THUMBNAIL / GAMBAR UTAMA *</label><input id="ma-image" type="file" accept="image/jpeg,image/png,image/webp"><small class="marketing-help">JPG, PNG, atau WEBP. Maksimal 5 MB. ${editing ? "Kosongkan untuk mempertahankan gambar saat ini." : "Wajib diunggah."}</small>${article.image_url ? `<img class="marketing-image-preview" src="${esc(article.image_url)}" alt="Thumbnail saat ini">` : ""}</div>
+        <div class="admin-field-v10 full"><label>THUMBNAIL / GAMBAR UTAMA</label><input id="ma-image" type="file" accept="image/jpeg,image/png,image/webp"><small class="marketing-help">JPG, PNG, atau WEBP. Maksimal 5 MB. ${editing ? "Kosongkan untuk mempertahankan gambar saat ini." : "Wajib diunggah."}</small>${article.image_url ? `<img class="marketing-image-preview" src="${esc(article.image_url)}" alt="Thumbnail saat ini">` : ""}</div>
         <div class="admin-field-v10"><label>KATEGORI / TAG TAMBAHAN</label><input id="ma-tags" maxlength="500" value="${esc(article.tags || "")}" placeholder="football culture, jersey design"></div>
         <div class="admin-field-v10"><label>KEYWORD UTAMA</label><input id="ma-focus" maxlength="160" value="${esc(article.focus_keyword || "")}" placeholder="jersey fantasy"></div>
         <div class="admin-field-v10"><label>KEYWORD PENDUKUNG</label><input id="ma-secondary" maxlength="500" value="${esc(article.secondary_keywords || "")}" placeholder="football fashion, jersey design"></div>
@@ -168,10 +168,24 @@
 
   async function multipart(path, method, formData) {
     const token = getToken();
-    const response = await fetch(`${API_BASE}${path}`, { method, headers: token ? { Authorization: `Bearer ${token}` } : {}, body: formData });
-    const data = await response.json().catch(() => ({}));
+    const endpoint = `${API_BASE}${path}`;
+    const headers = { Accept: "application/json" };
+    if (token) headers.Authorization = `Bearer ${token}`;
+
+    const response = await fetch(endpoint, { method, headers, body: formData });
+    const responseText = await response.text();
+    let data = {};
+    try {
+      data = responseText ? JSON.parse(responseText) : {};
+    } catch {
+      // Preserve a useful HTTP diagnostic even when a proxy returns HTML/plain text.
+    }
+
     if (response.status === 401) clearAuth();
-    if (!response.ok) throw new Error(data.message || `API ${response.status}`);
+    if (!response.ok) {
+      const detail = data.message || response.statusText || `HTTP ${response.status}`;
+      throw new Error(`${method} ${endpoint} · ${detail}`);
+    }
     return data;
   }
 

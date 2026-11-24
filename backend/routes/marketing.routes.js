@@ -189,7 +189,13 @@ router.get("/api/marketing/admin/articles", ...adminOnly, async (_req, res, next
   try {
     const [rows] = await pool.query(
       `SELECT id,title,excerpt,url,slug,content,image_url,category,tags,focus_keyword,secondary_keywords,
-              seo_title,meta_description,cta_label,cta_url,status,scheduled_at,published_at,author_name,published,sort_order,created_at,updated_at
+              seo_title,meta_description,cta_label,cta_url,
+              CASE WHEN status='scheduled' AND scheduled_at <= NOW() THEN 'published' ELSE status END AS status,
+              scheduled_at,
+              COALESCE(published_at, CASE WHEN status='scheduled' AND scheduled_at <= NOW() THEN scheduled_at ELSE NULL END) AS published_at,
+              author_name,
+              CASE WHEN status='scheduled' AND scheduled_at <= NOW() THEN 1 ELSE published END AS published,
+              sort_order,created_at,updated_at
        FROM blog_posts WHERE content IS NOT NULL AND content <> '' ORDER BY updated_at DESC, id DESC`
     );
     res.json(rows);
