@@ -576,18 +576,21 @@ function initScrollMotion() {
   items.forEach(item => observer.observe(item));
 }
 
-
+let websitePageViewTracked = false;
 function trackWebsitePageView() {
   if (document.body?.dataset?.page === "admin") return;
   try {
     if (localStorage.getItem("fusballAnalyticsConsent") !== "accepted") return;
-    let visitorId = localStorage.getItem("fusballVisitorId");
+    if (websitePageViewTracked) return;
+
+let visitorId = localStorage.getItem("fusballVisitorId");
     if (!visitorId) {
       visitorId = (window.crypto && crypto.randomUUID) ? crypto.randomUUID() : `fv-${Date.now()}-${Math.random().toString(36).slice(2)}`;
       localStorage.setItem("fusballVisitorId", visitorId);
     }
     const params = new URLSearchParams(location.search);
     const articleId = Number(document.querySelector('meta[name="article-id"]')?.content) || null;
+    websitePageViewTracked = true;
     fetch(`${API_BASE}/marketing/track`, {
       method: "POST", headers: { "Content-Type": "application/json" }, keepalive: true,
       body: JSON.stringify({ visitor_id: visitorId, path: location.pathname, article_id: articleId,

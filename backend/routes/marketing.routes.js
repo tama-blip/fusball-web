@@ -167,13 +167,40 @@ router.post("/api/marketing/track", async (req, res, next) => {
     const articleId = Number(req.body?.article_id) || null;
     const visitorHash = crypto.createHash("sha256").update(visitorId).digest("hex");
     let source = cleanText(req.body?.utm_source, 100).toLowerCase();
-    if (!source) {
-      const referrer = cleanText(req.body?.referrer, 1000);
-      try {
-        const host = referrer ? new URL(referrer).hostname.replace(/^www\./, "") : "";
-        source = !host ? "direct" : host.includes("instagram") ? "instagram" : host.includes("tiktok") ? "tiktok" : host.includes("facebook") ? "facebook" : host.includes("google") ? "google" : "referral";
-      } catch { source = "direct"; }
-    }
+
+if (!source) {
+  const referrer = cleanText(req.body?.referrer, 1000);
+
+  try {
+    const host = referrer
+      ? new URL(referrer).hostname.replace(/^www\./, "")
+      : "";
+
+    const ownHost = new URL(
+      process.env.PUBLIC_BASE_URL || "https://fusball-web.onrender.com"
+    ).hostname.replace(/^www\./, "");
+
+    const isInternal =
+      host === ownHost || host.endsWith(`.${ownHost}`);
+
+    source = !host
+      ? "direct"
+      : isInternal
+      ? "internal"
+      : host.includes("instagram")
+      ? "instagram"
+      : host.includes("tiktok")
+      ? "tiktok"
+      : host.includes("facebook")
+      ? "facebook"
+      : host.includes("google")
+      ? "google"
+      : "referral";
+
+  } catch {
+    source = "direct";
+  }
+}
     await pool.query(
       `INSERT INTO site_analytics_events
        (event_type,path,article_id,visitor_hash,traffic_source,utm_source,utm_medium,utm_campaign)
