@@ -333,7 +333,7 @@ router.put("/api/marketing/admin/articles/:id", ...adminOnly, blogUpload.single(
       );
     } finally { connection.release(); }
     if (uploaded && oldImage && oldImage !== newImage) await removeCloudinary(oldImage);
-    res.json({ message: "Artikel diperbarui.", slug });
+    res.json({ message: "Artikel diperbarui." });
   } catch (error) {
     if (uploaded?.publicId) {
       try { await cloudinary.uploader.destroy(uploaded.publicId, { resource_type: "image", invalidate: true }); } catch {}
